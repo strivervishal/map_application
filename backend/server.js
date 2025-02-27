@@ -10,7 +10,18 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
-app.use(cors());
+// Allow requests only from your frontend domain
+const allowedOrigins = [
+  "https://new-blog-app-7rnc.vercel.app", // ✅ Your React frontend domain
+];
+
+app.use(
+  cors({
+    origin: allowedOrigins, // Allow only your frontend
+    methods: ["GET", "POST"], // Allowed HTTP methods
+    credentials: true, // Allow cookies (if needed)
+  })
+);
 app.use(express.json());
 
 // Connect to MongoDB

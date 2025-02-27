@@ -5,7 +5,7 @@ import axios from "axios";
 import { ArrowUpDown, Map as MapIcon, X } from "lucide-react"; // Swap & Map Icons
 import "leaflet/dist/leaflet.css"; // Import Leaflet styles
 
-const socket = io("http://localhost:5000");
+const socket = io("https://map-vng5.vercel.app/");
 
 const MapComponent = ({ locations, updateLocations }) => {
   const [source, setSource] = useState("");
@@ -34,10 +34,13 @@ const MapComponent = ({ locations, updateLocations }) => {
         return;
       }
 
-      const response = await axios.post("http://localhost:5000/api/locations", {
-        source,
-        destination,
-      });
+      const response = await axios.post(
+        "https://map-vng5.vercel.app/api/locations",
+        {
+          source,
+          destination,
+        }
+      );
 
       updateLocations(response.data);
       calculateDistance(
