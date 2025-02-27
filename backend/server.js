@@ -1,55 +1,59 @@
+// Backend: server.js (Express + Socket.io + MongoDB)
 const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const dotenv = require("dotenv");
-const { Server } = require("socket.io");
-const http = require("http");
+require("dotenv").config();
 
-dotenv.config();
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
 
-// Allow requests only from your frontend domain
-const allowedOrigins = [
-  "https://new-blog-app-7rnc.vercel.app", // ✅ Your React frontend domain
-];
-
+// Middleware
+app.use(express.json());
 app.use(
   cors({
-    origin: allowedOrigins, // Allow only your frontend
-    methods: ["GET", "POST"], // Allowed HTTP methods
-    credentials: true, // Allow cookies (if needed)
+    origin: ["http://localhost:5173", "https://map-vng5.vercel.app"],
+    methods: ["GET", "POST"],
+    credentials: true,
   })
 );
-app.use(express.json());
 
-// Connect to MongoDB
+// MongoDB Connection
 mongoose
   .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log("✅ MongoDB Connected Successfully"))
-  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+  .then(() => console.log("MongoDB Connected"))
+  .catch((err) => console.log(err));
 
-// Routes
-const locationRoutes = require("./routes/locationRoutes");
-app.use("/api", locationRoutes);
+// Socket.io Setup
+const io = new Server(server, {
+  cors: {
+    origin: "*", // Allow all origins or specify frontend origins
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type"],
+    credentials: true,
+  },
+});
 
-// Socket.io
+
 io.on("connection", (socket) => {
-  console.log("A user connected:", socket.id);
+  console.log("User connected: ", socket.id);
 
-  socket.on("updateLocations", async (data) => {
-    io.emit("locationsUpdated", data);
+  socket.on("updateLocations", (data) => {
+    console.log("Received location data: ", data);
+    io.emit("locationsUpdated", data); // Broadcast to all users
   });
 
   socket.on("disconnect", () => {
-    console.log("User disconnected");
+    console.log("User disconnected: ", socket.id);
   });
 });
 
 // Start Server
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
