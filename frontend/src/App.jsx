@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import MapComponent from "./components/MapComponent";
 
-const socket = io("https://map-vng5.vercel.app/");
+const socket = io("http://localhost:5000");
 
 function App() {
   const [locations, setLocations] = useState({
@@ -35,12 +35,12 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center">
-      {/* Navbar */}
+      {/* ✅ Navbar with centered heading */}
       <nav className="w-full bg-blue-600 text-white py-4 shadow-md">
         <h1 className="text-center text-2xl font-bold">Live Map Tracker</h1>
       </nav>
 
-      {/* Map Container */}
+      {/* ✅ Main Content Container */}
       <div className="w-full max-w-4xl mt-6 p-4 bg-white shadow-lg rounded-lg">
         <MapComponent locations={locations} updateLocations={updateLocations} />
       </div>
