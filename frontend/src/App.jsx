@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import MapComponent from "./components/MapComponent";
 
-const socket = io("http://localhost:5000");
+const socket = io("http://localhost:5001");
 
 function App() {
   const [locations, setLocations] = useState({

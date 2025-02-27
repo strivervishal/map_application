@@ -11,7 +11,7 @@ import axios from "axios";
 import { ArrowUpDown, Map as MapIcon, X } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 
-const socket = io("http://localhost:5000");
+const socket = io("http://localhost:5001");
 
 const MapComponent = ({ locations, updateLocations }) => {
   const [source, setSource] = useState("");
@@ -42,7 +42,7 @@ const MapComponent = ({ locations, updateLocations }) => {
     }
 
     try {
-      const response = await axios.post("http://localhost:5000/api/locations", {
+      const response = await axios.post("http://localhost:5001/api/locations", {
         source,
         destination,
       });
