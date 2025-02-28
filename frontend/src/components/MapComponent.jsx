@@ -8,31 +8,34 @@ import {
 } from "react-leaflet";
 import { io } from "socket.io-client";
 import axios from "axios";
-import { ArrowUpDown, Map as MapIcon, X } from "lucide-react";
+import { ArrowUpDown, Map as MapIcon, X, LocateFixed } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 
-const socket = io("http://localhost:5001");
+const socket = io(import.meta.env.VITE_BACKEND_LINK);
 
 const MapComponent = ({ locations, updateLocations }) => {
   const [source, setSource] = useState("");
   const [destination, setDestination] = useState("");
   const [distance, setDistance] = useState(null);
   const [isMapOpen, setIsMapOpen] = useState(false);
-  const [route, setRoute] = useState([]); // Stores the route coordinates
+  const [route, setRoute] = useState([]);
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [isLoading, setIsLoading] = useState(false); // Prevent multiple calls
 
   useEffect(() => {
     socket.on("locationsUpdated", (data) => {
       updateLocations(data);
       calculateDistance(data.sourceCoords, data.destinationCoords);
-      setRoute([data.sourceCoords, data.destinationCoords]); // Set route
+      setRoute([data.sourceCoords, data.destinationCoords]);
     });
 
     return () => socket.off("locationsUpdated");
-  }, []);
+  }, [updateLocations]); // Only runs when locations change
 
   const handleSwap = () => {
     setSource(destination);
     setDestination(source);
+    setDistance(null); // Reset distance when swapping
   };
 
   const handleSearch = async () => {
@@ -41,20 +44,26 @@ const MapComponent = ({ locations, updateLocations }) => {
       return;
     }
 
+    if (isLoading) return; // Prevent multiple calls
+    setIsLoading(true);
+
     try {
-      const response = await axios.post("http://localhost:5001/api/locations", {
-        source,
-        destination,
-      });
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_LINK}/api/locations`,
+        { source, destination }
+      );
 
       updateLocations(response.data);
       calculateDistance(
         response.data.sourceCoords,
         response.data.destinationCoords
       );
-      setRoute([response.data.sourceCoords, response.data.destinationCoords]); // Set route
+      setRoute([response.data.sourceCoords, response.data.destinationCoords]);
+      setIsMapOpen(true);
     } catch (error) {
       console.error("Search Error:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -79,6 +88,35 @@ const MapComponent = ({ locations, updateLocations }) => {
     const distanceKm = R * c;
 
     setDistance(distanceKm.toFixed(2));
+  };
+
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        setCurrentLocation([latitude, longitude]);
+
+        try {
+          const res = await axios.get(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+          );
+          const locationName = res.data.display_name || "Current Location";
+          setSource(locationName);
+        } catch (error) {
+          console.error("Error fetching location name:", error);
+          setSource(`${latitude}, ${longitude}`);
+        }
+      },
+      (error) => {
+        console.error("Error getting location:", error);
+        alert("Could not fetch your location.");
+      }
+    );
   };
 
   return (
@@ -113,24 +151,26 @@ const MapComponent = ({ locations, updateLocations }) => {
         />
       </div>
 
-      {/* Search & View Map Buttons */}
+      {/* Location & Search Buttons */}
       <div className="flex space-x-4 mt-4">
         <button
+          onClick={getCurrentLocation}
+          className="w-1/3 bg-purple-500 text-white text-lg font-semibold py-3 rounded-lg hover:bg-purple-600 transition duration-300 shadow-md flex justify-center items-center"
+        >
+          <LocateFixed size={24} className="mr-2" />
+          Use My Location
+        </button>
+
+        <button
           onClick={handleSearch}
-          className="w-full bg-blue-500 text-white text-lg font-semibold py-3 rounded-lg hover:bg-blue-600 transition duration-300 shadow-md"
+          className="w-2/3 bg-blue-500 text-white text-lg font-semibold py-3 rounded-lg hover:bg-blue-600 transition duration-300 shadow-md"
         >
           🔍 Search Route
-        </button>
-        <button
-          onClick={() => setIsMapOpen(true)}
-          className="w-1/4 bg-green-500 text-white text-lg font-semibold py-3 rounded-lg hover:bg-green-600 transition duration-300 shadow-md flex justify-center items-center"
-        >
-          <MapIcon size={24} />
         </button>
       </div>
 
       {/* Distance Display */}
-      {distance && (
+      {distance && source && destination && (
         <div className="mt-4 text-center">
           <p className="text-lg font-semibold text-gray-600">
             🚗 Distance: <span className="text-blue-500">{distance} km</span>
@@ -139,19 +179,9 @@ const MapComponent = ({ locations, updateLocations }) => {
       )}
 
       {/* Full-Screen Map Modal */}
-      {/* Full-Screen Map Modal */}
       {isMapOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-4 w-full max-w-4xl shadow-xl relative">
-            {/* 🏠 Back to Home Button (Now Visible) */}
-            <button
-              onClick={() => setIsMapOpen(false)}
-              className="absolute top-5 left-5 bg-gray-800 text-white p-3 rounded-full shadow-md hover:bg-gray-900 transition text-lg z-50"
-            >
-              🏠
-            </button>
-
-            {/* ❌ Close Map Button */}
             <button
               onClick={() => setIsMapOpen(false)}
               className="absolute top-5 right-5 bg-red-500 text-white p-3 rounded-full shadow-md hover:bg-red-600 transition text-lg z-50"
@@ -159,13 +189,18 @@ const MapComponent = ({ locations, updateLocations }) => {
               <X size={24} />
             </button>
 
-            {/* Map Display */}
             <MapContainer
-              center={[20, 78]}
-              zoom={5}
+              center={currentLocation || [20, 78]}
+              zoom={currentLocation ? 12 : 5}
               className="h-[500px] w-full rounded-lg relative z-10"
             >
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+
+              {currentLocation && (
+                <Marker position={currentLocation}>
+                  <Popup>📍 You are here</Popup>
+                </Marker>
+              )}
 
               {locations.sourceCoords && (
                 <Marker position={locations.sourceCoords}>
@@ -179,7 +214,6 @@ const MapComponent = ({ locations, updateLocations }) => {
                 </Marker>
               )}
 
-              {/* Draw Route Line */}
               {route.length === 2 && (
                 <Polyline positions={route} color="blue" />
               )}
