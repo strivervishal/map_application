@@ -11,7 +11,7 @@ import axios from "axios";
 import { ArrowUpDown, Map as MapIcon, X, LocateFixed } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 
-const socket = io(import.meta.env.VITE_BACKEND_LINK);
+const socket = io("https://map-application-8i6f.vercel.app");
 
 const MapComponent = ({ locations, updateLocations }) => {
   const [source, setSource] = useState("");
@@ -49,8 +49,11 @@ const MapComponent = ({ locations, updateLocations }) => {
 
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_LINK}/api/locations`,
-        { source, destination }
+        "https://map-application-8i6f.vercel.app/api/locations",
+        {
+          source,
+          destination,
+        }
       );
 
       updateLocations(response.data);

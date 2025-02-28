@@ -38,9 +38,7 @@ io.on("connection", (socket) => {
     console.log("User disconnected");
   });
 });
-app.get("/", (req,res) => {
-  res.redirect(process.env.FRONTEND_URL);
-});
+
 // Start Server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

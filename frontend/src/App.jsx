@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import MapComponent from "./components/MapComponent";
 
-const socket = io(import.meta.env.VITE_BACKEND_LINK);
+const socket = io("https://map-application-8i6f.vercel.app");
 
 function App() {
   const [locations, setLocations] = useState({
