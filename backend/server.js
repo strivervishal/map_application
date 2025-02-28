@@ -8,9 +8,21 @@ const http = require("http");
 dotenv.config();
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "https://map-application-alpha.vercel.app", // ✅ Allow frontend domain
+    methods: ["GET", "POST"], // ✅ Define allowed methods
+    credentials: true, // ✅ Allow cookies if needed
+  })
+);
+const io = new Server(server, {
+  cors: {
+    origin: "https://map-application-alpha.vercel.app",
+    methods: ["GET", "POST"],
+  },
+});
+
 app.use(express.json());
 
 // Connect to MongoDB
